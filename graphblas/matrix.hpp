@@ -68,6 +68,7 @@ class Matrix {
   Info resize(Index nrows, Index ncols);
   Info setStorage(Storage  mat_type);
   Info getStorage(Storage* mat_type) const;
+  std::size_t nbytes() const;
 
   template <typename U>
   Info fill(Index axis,
@@ -232,6 +233,11 @@ template <typename T>
 Info Matrix<T>::getStorage(Storage* mat_type) const {
   if (mat_type == NULL) return GrB_NULL_POINTER;
   return matrix_.getStorage(mat_type);
+}
+
+template <typename T>
+std::size_t Matrix<T>::nbytes() const {
+  return matrix_.nbytes();
 }
 
 template <typename T>

@@ -87,6 +87,7 @@ class SparseMatrix {
   Info setNvals(Index nvals);
   Info getFormat(SparseMatrixFormat* format) const;
   Info getSymmetry(bool* symmetry) const;
+  std::size_t nbytes() const;
   Info resize(Index nrows, Index ncols);
   template <typename U>
   Info fill(Index axis, Index nvals, U start);
@@ -558,6 +559,11 @@ Info SparseMatrix<T>::getSymmetry(bool* symmetry) const {
   return GrB_SUCCESS;
 }
 
+template <typename T>
+std::size_t SparseMatrix<T>::nbytes() const {
+  return nvals_*sizeof(T) + nvals_*sizeof(graphblas::Index) + (nrows_+1)*sizeof(graphblas::Index);
+}
+
 // Note: has different meaning from sequential resize
 //      -that one makes SparseMatrix bigger
 //      -this one accounts for smaller nrows
@@ -633,23 +639,23 @@ Info SparseMatrix<T>::allocateCpu() {
   if (ncols_ > 0 && h_cscColPtr_ == NULL) {
     h_cscColPtr_ = reinterpret_cast<Index*>(malloc((ncols_+1)*sizeof(Index)));
 
-    std::cout << "Allocate " << ncols_ + 1 << std::endl;
+    // std::cout << "Allocate " << ncols_ + 1 << std::endl;
   } else {
-    std::cout << "Do not allocate " << ncols_ << " " << h_cscColPtr_ << std::endl;
+    // std::cout << "Do not allocate " << ncols_ << " " << h_cscColPtr_ << std::endl;
   }
 
   if (nvals_ > 0 && h_cscRowInd_ == NULL) {
     h_cscRowInd_ = reinterpret_cast<Index*>(malloc(ncapacity_*sizeof(Index)));
-    std::cout << "Allocate " << ncapacity_ << std::endl;
+    // std::cout << "Allocate " << ncapacity_ << std::endl;
   } else {
-    std::cout << "Do not allocate " << nvals_ << " " << h_cscRowInd_ << std::endl;
+    // std::cout << "Do not allocate " << nvals_ << " " << h_cscRowInd_ << std::endl;
   }
 
   if (nvals_ > 0 && h_cscVal_ == NULL) {
     h_cscVal_    = reinterpret_cast<T*>(malloc(ncapacity_*sizeof(T)));
-    std::cout << "Allocate " << ncapacity_ << std::endl;
+    // std::cout << "Allocate " << ncapacity_ << std::endl;
   } else {
-    std::cout << "Do not allocate " << nvals_ << " " << h_cscVal_ << std::endl;
+    // std::cout << "Do not allocate " << nvals_ << " " << h_cscVal_ << std::endl;
   }
 
   // TODO(@ctcyang): does not need to be so strict since mxm may need to

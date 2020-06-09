@@ -13,7 +13,8 @@ template <typename T>
 class Matrix;
 
 template <typename c, typename a, typename b, typename m,
-          typename BinaryOpT,     typename SemiringT>
+          typename BinaryOpT,     typename SemiringT,
+          typename Allocator>
 Info mxm(Matrix<c>*       C,
          const Matrix<a>* mask,
          BinaryOpT        accum,
@@ -25,7 +26,7 @@ Info mxm(Matrix<c>*       C,
   Matrix<b>* B_t = const_cast<Matrix<b>*>(B);
 
   if (desc->debug()) {
-    std::cout << "===Begin mxm===\n";
+    // std::cout << "===Begin mxm===\n";
     CHECK(A_t->print());
     CHECK(B_t->print());
   }
@@ -37,8 +38,8 @@ Info mxm(Matrix<c>*       C,
 
   if (A_mat_type == GrB_SPARSE && B_mat_type == GrB_SPARSE) {
     CHECK(C->setStorage(GrB_SPARSE));
-    CHECK(cusparse_spgemm2(&C->sparse_, mask, accum, op, &A->sparse_,
-        &B->sparse_, desc));
+    CHECK(cusparse_spgemm2<c, a, b, m, BinaryOpT, SemiringT, Allocator>
+                 (&C->sparse_, mask, accum, op, &A->sparse_, &B->sparse_, desc));
   } else {
     std::cout << "Error: SpMM and GEMM not implemented yet!\n";
     return GrB_NOT_IMPLEMENTED;
@@ -61,7 +62,7 @@ Info mxm(Matrix<c>*       C,
   }
 
   if (desc->debug()) {
-    std::cout << "===End mxm===\n";
+    // std::cout << "===End mxm===\n";
     CHECK(C->print());
   }
   return GrB_SUCCESS;

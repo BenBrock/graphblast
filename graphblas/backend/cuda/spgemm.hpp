@@ -138,7 +138,7 @@ Info cusparse_spgemm(SparseMatrix<c>*       C,
 
   if (C_nvals > C->ncapacity_) {
     if (desc->debug())
-      std::cout << "Increasing matrix C: " << C->ncapacity_ << " -> " << C_nvals << std::endl;
+      // std::cout << "Increasing matrix C: " << C->ncapacity_ << " -> " << C_nvals << std::endl;
     C->ncapacity_ = C_nvals*C->kresize_ratio_;
     if (C->d_csrColInd_ != NULL) {
       CUDA_CALL(cudaFree(C->d_csrColInd_));
@@ -195,8 +195,11 @@ Info cusparse_spgemm(SparseMatrix<c>*       C,
   return GrB_SUCCESS;
 }
 
+// TODO
+// Actually use Allocator
 template <typename c, typename a, typename b, typename m,
-          typename BinaryOpT,     typename SemiringT>
+          typename BinaryOpT,     typename SemiringT,
+          typename Allocator>
 Info cusparse_spgemm2(SparseMatrix<c>*       C,
                       const Matrix<m>*       mask,
                       BinaryOpT              accum,
@@ -248,7 +251,11 @@ Info cusparse_spgemm2(SparseMatrix<c>*       C,
   int baseC;
   int *nnzTotalDevHostPtr = &(C_nvals);
   if (C->d_csrRowPtr_ == NULL) {
-    CUDA_CALL(cudaMalloc(&C->d_csrRowPtr_, (A_nrows+1)*sizeof(Index)));
+    try {
+      C->d_csrRowPtr_ = rebind_allocator_t<Allocator, Index>{}.allocate(A_nrows+1);
+    } catch(const std::bad_alloc& e) {
+      throw std::runtime_error("Ran out of memory allocating CSR rowptr");
+    }
   }
   /*else
   {
@@ -264,6 +271,7 @@ Info cusparse_spgemm2(SparseMatrix<c>*       C,
     free( C.h_csrRowPtr_ );
     C.h_csrRowPtr_ = (Index*)malloc((A_nrows+1)*sizeof(Index));
   }*/
+
 
   // Step 1: create an opaque structure
   cusparseCreateCsrgemm2Info(&info);
@@ -356,8 +364,12 @@ Info cusparse_spgemm2(SparseMatrix<c>*       C,
       CUDA_CALL(cudaFree(C->d_csrColInd_));
       CUDA_CALL(cudaFree(C->d_csrVal_));
     }
-    CUDA_CALL(cudaMalloc(&C->d_csrColInd_, C_nvals*sizeof(Index)));
-    CUDA_CALL(cudaMalloc(&C->d_csrVal_, C_nvals*sizeof(c)));
+    try {
+      C->d_csrColInd_ = rebind_allocator_t<Allocator, Index>{}.allocate(C_nvals);
+      C->d_csrVal_ = rebind_allocator_t<Allocator, c>{}.allocate(C_nvals);
+    } catch(const std::bad_alloc& e) {
+      throw std::runtime_error("Ran out of memory allocating col ind, csr val of size " + std::to_string(C_nvals));
+    }
 
     if (C->h_csrColInd_ != NULL) {
       free(C->h_csrColInd_);
@@ -403,6 +415,9 @@ Info cusparse_spgemm2(SparseMatrix<c>*       C,
       break;
     case CUSPARSE_STATUS_MATRIX_TYPE_NOT_SUPPORTED:
       std::cout << "Error: Matrix type not supported.\n";
+      break;
+    default:
+      std::cout << "Error: Unknown CuSPARSE error.\n";
   }
 
   C->need_update_ = true;  // Set flag that we need to copy data from GPU

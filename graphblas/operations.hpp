@@ -18,7 +18,8 @@ namespace graphblas {
  *                             .*: Boolean and
  */
 template <typename c, typename m, typename a, typename b,
-          typename BinaryOpT,     typename SemiringT>
+          typename BinaryOpT,     typename SemiringT,
+          typename Allocator = graphblas::allocator<c>>
 Info mxm(Matrix<c>*       C,
          const Matrix<m>* mask,
          BinaryOpT        accum,
@@ -26,6 +27,7 @@ Info mxm(Matrix<c>*       C,
          const Matrix<a>* A,
          const Matrix<b>* B,
          Descriptor*      desc) {
+  // using Allocator = graphblas::allocator<c>;
   // Null pointer check
   if (C == NULL || A == NULL || B == NULL || desc == NULL)
     return GrB_UNINITIALIZED_OBJECT;
@@ -44,7 +46,8 @@ Info mxm(Matrix<c>*       C,
   const backend::Matrix<m>* mask_t = (mask == NULL) ? NULL : &mask->matrix_;
   backend::Descriptor* desc_t = (desc == NULL) ? NULL : &desc->descriptor_;
 
-  return backend::mxm<c, a, b, m>(&C->matrix_, mask_t, accum, op, &A->matrix_,
+  return backend::mxm<c, a, b, m, decltype(accum), decltype(op), Allocator
+                      >(&C->matrix_, mask_t, accum, op, &A->matrix_,
       &B->matrix_, desc_t);
 }
 
