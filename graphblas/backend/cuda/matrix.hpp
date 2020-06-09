@@ -67,6 +67,7 @@ class Matrix {
   Info resize(Index nrows, Index ncols);
   Info setStorage(Storage mat_type);
   Info getStorage(Storage* mat_type) const;
+  std::size_t nbytes() const;
   Info getFormat(SparseMatrixFormat* format) const;
   Info getSymmetry(bool* symmetry) const;
   template <typename MatrixT>
@@ -302,6 +303,15 @@ template <typename T>
 inline Info Matrix<T>::getStorage(Storage* mat_type) const {
   *mat_type = mat_type_;
   return GrB_SUCCESS;
+}
+
+template <typename T>
+inline std::size_t Matrix<T>::nbytes() const {
+  if (mat_type_ == GrB_SPARSE) {
+    return sparse_.nbytes();
+  } else {
+    throw std::runtime_error("nbytes: not implemented for dense matrices");
+  }
 }
 
 template <typename T>
