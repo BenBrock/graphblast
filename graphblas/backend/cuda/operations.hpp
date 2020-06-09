@@ -38,8 +38,8 @@ Info mxm(Matrix<c>*       C,
 
   if (A_mat_type == GrB_SPARSE && B_mat_type == GrB_SPARSE) {
     CHECK(C->setStorage(GrB_SPARSE));
-    CHECK(cusparse_spgemm2<c, a, b, m, BinaryOpT, SemiringT, Allocator>
-                 (&C->sparse_, mask, accum, op, &A->sparse_, &B->sparse_, desc));
+    cusparse_spgemm2<c, a, b, m, BinaryOpT, SemiringT, Allocator>
+                 (&C->sparse_, mask, accum, op, &A->sparse_, &B->sparse_, desc);
   } else {
     std::cout << "Error: SpMM and GEMM not implemented yet!\n";
     return GrB_NOT_IMPLEMENTED;
